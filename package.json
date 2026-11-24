@@ -13,10 +13,12 @@
     "@ant-design/icons-vue": "^7.0.1",
     "ant-design-vue": "^4.2.6",
     "mqtt": "^5.16.1",
+    "three": "^0.170.0",
     "vue": "^3.5.0",
     "vue-router": "^4.6.5"
   },
   "devDependencies": {
+    "@types/three": "^0.170.0",
     "@vitejs/plugin-vue": "^6.0.0",
     "less": "^4.9.1",
     "typescript": "~5.9.3",
