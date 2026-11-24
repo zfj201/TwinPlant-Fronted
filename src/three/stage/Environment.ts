@@ -77,16 +77,6 @@ export function setupEnvironment(ctx: EngineContext) {
 
     // RoomEnvironment 是程序生成的场景，
     // 释放它创建的几何体和材质
-    roomEnvironment.traverse((object) => {
-      if (!(object instanceof Mesh)) return;
-
-      object.geometry.dispose();
-
-      const materials = Array.isArray(object.material)
-        ? object.material
-        : [object.material];
-
-      materials.forEach((material) => material.dispose());
-    });
+    roomEnvironment.dispose()
   };
 }

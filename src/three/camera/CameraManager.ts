@@ -32,6 +32,8 @@ export class CameraManager implements TwinModule {
     this.controls.maxDistance = 70;
 
     // 初始观察目标
+    
+    this.camera.position.set(7, 16, 27);
     this.controls.target.set(0, 2, 0);
 
     this.controls.update();

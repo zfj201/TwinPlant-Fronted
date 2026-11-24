@@ -28,9 +28,6 @@ export function createContext(container: HTMLElement): EngineContext {
   // 2. 创建 Camera
   const camera = new PerspectiveCamera(40, width / height, 0.1, 200);
 
-  camera.position.set(7, 16, 27);
-  camera.lookAt(0, 2, 0);
-
   // 3. 创建 Renderer
   const renderer = new WebGLRenderer({
     antialias: true, //抗锯齿
