@@ -17,7 +17,8 @@ export interface EngineContext {
   renderer: WebGLRenderer;
 }
 
-// 统一创建EngineContext，供各个页面使用同一单例
+// 创建一份 EngineContext。只由 Engine 的构造函数调用一次，
+// 之后 Engine 把同一个对象传给所有模块，模块不要自己调用它。
 export function createContext(container: HTMLElement): EngineContext {
   const width = container.clientWidth || 1;
   const height = container.clientHeight || 1;
@@ -36,7 +37,7 @@ export function createContext(container: HTMLElement): EngineContext {
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  renderer.setSize(width, height);
+  renderer.setSize(width, height, false);
 
   //   把任意亮度压缩到 0 到 1，让亮度平滑过渡
   renderer.toneMapping = ACESFilmicToneMapping;

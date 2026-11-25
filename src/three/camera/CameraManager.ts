@@ -18,11 +18,6 @@ export class CameraManager implements TwinModule {
     // 阻尼
     this.controls.enableDamping = true;
 
-    // 允许旋转、缩放、平移
-    this.controls.enableRotate = true;
-    this.controls.enableZoom = true;
-    this.controls.enablePan = true;
-
     // 限制俯仰角
     this.controls.minPolarAngle = 0;
     this.controls.maxPolarAngle = MathUtils.degToRad(88);
@@ -32,9 +27,9 @@ export class CameraManager implements TwinModule {
     this.controls.maxDistance = 70;
 
     // 初始观察目标
-    
-    this.camera.position.set(7, 16, 27);
-    this.controls.target.set(0, 2, 0);
+
+    this.camera.position.set(9, 22, 31);
+    this.controls.target.set(1, 1, -0.5);
 
     this.controls.update();
   }

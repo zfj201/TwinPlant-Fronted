@@ -22,11 +22,13 @@ function prepareScene(root: THREE.Object3D): void {
   });
   const glassCache = new Map<string, THREE.MeshStandardMaterial>();
 
-  const getGlass = (name: string) => {
+  // color 取自 GLB 里的原玻璃材质，同名材质颜色相同，缓存只保留第一次的
+  const getGlass = (name: string, color: THREE.Color) => {
     let mat = glassCache.get(name);
     if (!mat) {
       mat = new THREE.MeshStandardMaterial({
         name,
+        color: color.clone(),
         roughness: 0.05,
         transparent: true,
         opacity: GLASS_OPACITY[name],
@@ -73,7 +75,7 @@ function prepareScene(root: THREE.Object3D): void {
 
     // 1. 是玻璃，就换成简单玻璃
     if (mat.name === "MAT_Glass" || mat.name === "MAT_RoofGlass") {
-      mat = getGlass(mat.name);
+      mat = getGlass(mat.name, (mat as THREE.MeshStandardMaterial).color);
       mesh.material = mat;
     }
 

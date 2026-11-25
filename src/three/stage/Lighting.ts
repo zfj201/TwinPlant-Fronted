@@ -48,7 +48,6 @@ export function setupLighting(ctx: EngineContext) {
     scene.remove(directionalLight);
     scene.remove(directionalLight.target);
 
-    directionalLight.shadow.map?.dispose();
     directionalLight.dispose();
   };
 }

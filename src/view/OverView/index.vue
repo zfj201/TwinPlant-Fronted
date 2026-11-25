@@ -3,7 +3,9 @@
     <DeviceList />
     <div class="center">
       <!-- 3D 区域：仅占位，后续由 three 组件替换 -->
-      <div class="scene"></div>
+      <div class="scene">
+        <ThreeStage />
+      </div>
       <!-- <LinkPulse /> -->
     </div>
     <DeviceDetail />
@@ -14,6 +16,7 @@
 import DeviceList from './components/DeviceList.vue'
 import DeviceDetail from './components/DeviceDetail.vue'
 import LinkPulse from './components/LinkPulse.vue'
+import ThreeStage from './components/ThreeStage.vue'
 </script>
 
 <style scoped lang="less">
@@ -32,6 +35,7 @@ import LinkPulse from './components/LinkPulse.vue'
     .scene {
       flex: 1;
       min-height: 0;
+      position: relative;
     }
   }
 }
