@@ -36,6 +36,7 @@ export class Engine {
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
+      renderer.render(this.context.scene, this.context.camera); // 在绘制上屏前补画一帧
     });
     this.observer.observe(container);
   }
