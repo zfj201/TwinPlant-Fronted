@@ -6,7 +6,7 @@ import './styles/global.less'
 
 import App from './App.vue'
 import router from './router'
-import { connectMqtt } from './services/mqtt'
+import { connectMqtt, registerMqttHandlers } from './services/mqtt'
 
 const app = createApp(App)
 
@@ -17,3 +17,4 @@ app.use(Antd)
 app.mount('#app')
 
 connectMqtt()
+registerMqttHandlers()
