@@ -1,0 +1,243 @@
+{
+  "contractVersion": "0.1.0",
+  "scene": {
+    "name": "TwinPlant_TidewaterMicroPlant",
+    "file": "export/twinplant_factory.glb",
+    "units": "meter",
+    "upAxis": "+Y (three.js)",
+    "axisMapping": "blender (x, y, z) -> three (x, z, -y)",
+    "origin": "plinth center, floor level (y = 0)",
+    "frontDirection": "+Z (cutaway side, default camera)",
+    "footprint": { "x": 28, "z": 18 },
+    "budget": { "maxTriangles": 150000, "maxTrianglesGreybox": 30000, "maxDrawCalls": 150, "maxTextureSize": 2048, "maxGlbMB": 8 }
+  },
+
+  "naming": {
+    "allowedPattern": "^[A-Za-z0-9_]+$",
+    "forbidden": ["blender .001 suffix", "spaces", ". : / [ ]"],
+    "prefixes": {
+      "DEV_": "device root empty, userData.deviceId required",
+      "ANIM_": "code-driven moving part, userData.drive required",
+      "MNT_": "orientation mount empty; child ANIM_ spins about its own local Y",
+      "LAMP_": "status lamp emissive mesh, single material MAT_Lamp_<deviceId with - replaced by _>",
+      "HIT_": "invisible raycast proxy (userData.proxy = true)",
+      "ZONE_": "invisible region volume (userData.proxy = true)",
+      "FX_": "effect mesh; userData.defaultVisible = false means hide on load",
+      "LBL_": "CSS2D label anchor empty",
+      "CAM_": "camera bookmark empty, looks along local -Z, target = position + forward * userData.lookDistance",
+      "SCR_": "screen plane, UV 0-1, CanvasTexture target, userData.aspect",
+      "STATIC_": "static structure, mergeable, AO bake target (TEXCOORD_1, P2)"
+    }
+  },
+
+  "lampStates": {
+    "OFF":       { "color": "#000000", "intensity": 0 },
+    "GREEN":     { "color": "#22D36B", "intensity": 3 },
+    "AMBER":     { "color": "#FFB020", "intensity": 3 },
+    "RED":       { "color": "#FF2D2D", "intensity": 4 },
+    "RED_BLINK": { "color": "#FF2D2D", "intensity": 5, "blinkHz": 2 },
+    "OFFLINE":   { "color": "#5A616B", "intensity": 0.5 }
+  },
+
+  "devices": [
+    {
+      "deviceId": "tank-01",
+      "deviceType": "water_level",
+      "displayName": "潮汐柱 · 水位",
+      "file": "export/devices/tank.glb",
+      "collection": "COL_Tank",
+      "dataSource": { "sensor": "HC-SR04 / float switch", "node": "STM32F103", "rateHz": 0.5 },
+      "metrics": [{ "key": "level", "unit": "%", "min": 0, "max": 100 }],
+      "nodes": {
+        "DEV_Tank":               { "role": "root" },
+        "ANIM_Tank_Water":        { "drive": "scaleY", "note": "pivot = inner bottom (y 0.4), full height 5.6 m; scale.y = level/100 (clamp >= 0.001)" },
+        "ANIM_Tank_WaterSurface": { "drive": "translateY", "travelMin": 0.4, "travelMax": 6.0, "note": "y = travelMin + level/100 * (travelMax - travelMin)" },
+        "ANIM_Tank_Float":        { "drive": "translateY", "travelMin": 0.4, "travelMax": 6.0 },
+        "ANIM_Tank_Cursor":       { "drive": "translateY", "travelMin": 0.4, "travelMax": 6.0 },
+        "ANIM_Tank_BeaconSpin":   { "drive": "spin", "axis": "y", "rpmWhenAlarm": 60 },
+        "LAMP_Tank":              { "lampOf": "tank-01" },
+        "HIT_Tank":               { "role": "pick" },
+        "LBL_Tank":               { "role": "label" },
+        "CAM_Tank":               { "role": "bookmark" }
+      },
+      "stateRules": [
+        { "when": "level >= 80", "lamp": "RED", "fx": ["ANIM_Tank_BeaconSpin", "water tint warm"], "recoverWhen": "level <= 75" },
+        { "when": "level >= 70", "lamp": "AMBER", "optional": true },
+        { "when": "default", "lamp": "GREEN" }
+      ]
+    },
+
+    {
+      "deviceId": "fan-01",
+      "deviceType": "fan",
+      "displayName": "呼吸墙 · 排风扇",
+      "file": "export/devices/fan.glb",
+      "collection": "COL_Fan",
+      "dataSource": { "actuator": "PWM fan via relay/MOSFET", "node": "STM32F407", "rateHz": 5 },
+      "metrics": [{ "key": "rpm", "unit": "rpm", "min": 0, "max": 1800 }],
+      "controls": [{ "key": "setRpm", "min": 0, "max": 1800, "step": 100 }],
+      "nodes": {
+        "DEV_Fan":            { "role": "root" },
+        "MNT_Fan_Rotor":      { "role": "mount", "note": "local Y = fan axis, points into the room" },
+        "ANIM_Fan_Rotor":     { "drive": "spin", "axis": "y" },
+        "FX_Fan_BlurDisc":    { "drive": "visibleWhen", "condition": "rpm > 900", "defaultVisible": false },
+        "ANIM_Fan_Ribbons":   { "drive": "morph", "morphTargets": ["Flutter"], "influence": "rpm / 1800" },
+        "ANIM_Fan_Windsock":  { "drive": "morph", "morphTargets": ["Full"], "influence": "rpm / 1800", "note": "basis = Droop; mast inside the room in the airflow" },
+        "FX_Fan_Airflow":     { "drive": "uvScrollV", "speed": "rpm / 600", "note": "UV.v along flow, 0 at fan" },
+        "LAMP_Fan":           { "lampOf": "fan-01" },
+        "HIT_Fan":            { "role": "pick" },
+        "LBL_Fan":            { "role": "label" },
+        "CAM_Fan":            { "role": "bookmark" }
+      },
+      "stateRules": [
+        { "when": "stalled || offline", "lamp": "RED" },
+        { "when": "default", "lamp": "GREEN" }
+      ]
+    },
+
+    {
+      "deviceId": "hv-01",
+      "deviceType": "no_approach",
+      "displayName": "高压笼 · 禁止靠近",
+      "file": "export/devices/hvcage.glb",
+      "collection": "COL_HVCage",
+      "dataSource": { "options": ["scene AGV distance", "first-person camera distance", "HC-SR04 / VL53L0X"], "rateHz": 10 },
+      "metrics": [{ "key": "distance", "unit": "m" }],
+      "nodes": {
+        "DEV_HVCage":        { "role": "root" },
+        "ZONE_HV_Warn":      { "shape": "cylinder", "radius": 2.5, "height": 3 },
+        "ZONE_HV_Danger":    { "shape": "cylinder", "radius": 1.2, "height": 3 },
+        "FX_HV_Rings":       { "drive": "shader", "note": "3 floor rings r 1.2/1.85/2.5, UV.v = radius / 2.5", "defaultVisible": false },
+        "FX_HV_Bars":        { "drive": "emissiveSweep", "note": "24 cage bars, UV.v = height 0..1" },
+        "FX_HV_Shield":      { "drive": "scaleXYZ", "note": "geodesic dome r 1.65, pivot at floor center", "defaultVisible": false },
+        "FX_HV_Arc":         { "drive": "visibleWhen", "condition": "danger", "defaultVisible": false },
+        "LAMP_HVCage":       { "lampOf": "hv-01" },
+        "HIT_HVCage":        { "role": "pick" },
+        "LBL_HVCage":        { "role": "label" },
+        "CAM_HVCage":        { "role": "bookmark" }
+      },
+      "stateRules": [
+        { "when": "distance <= 1.2", "lamp": "RED_BLINK", "fx": ["FX_HV_Shield", "FX_HV_Arc", "FX_HV_Rings", "FX_HV_Bars"] },
+        { "when": "distance <= 2.5", "lamp": "AMBER", "fx": ["FX_HV_Rings", "FX_HV_Bars"] },
+        { "when": "default", "lamp": "GREEN" }
+      ]
+    },
+
+    {
+      "deviceId": "incubator-01",
+      "deviceType": "no_touch",
+      "displayName": "培养舱 · 禁止触摸",
+      "file": "export/devices/incubator.glb",
+      "collection": "COL_Incubator",
+      "dataSource": { "options": ["frontend click on HIT_Incubator", "TTP223 touch module on F103 GPIO"], "rateHz": "event" },
+      "metrics": [{ "key": "touched", "unit": "bool" }],
+      "controls": [{ "key": "reset" }],
+      "nodes": {
+        "DEV_Incubator":            { "role": "root" },
+        "ANIM_Incubator_Gyro":      { "drive": "spin", "axis": "y", "rpmNormal": 20 },
+        "MNT_Incubator_GyroRing":   { "role": "mount", "note": "tilted 25 deg" },
+        "ANIM_Incubator_GyroRing":  { "drive": "spin", "axis": "y", "rpmNormal": -12 },
+        "FX_Incubator_Handprint":   { "drive": "opacity", "fadeSec": 3, "defaultVisible": false },
+        "LAMP_Incubator":           { "lampOf": "incubator-01" },
+        "HIT_Incubator":            { "role": "pick" },
+        "LBL_Incubator":            { "role": "label" },
+        "CAM_Incubator":            { "role": "bookmark" }
+      },
+      "stateRules": [
+        { "when": "touched", "lamp": "RED", "fx": ["FX_Incubator_Handprint"], "gyro": "spin down to 0", "recoverWhen": "reset || 10s timeout" },
+        { "when": "default", "lamp": "GREEN" }
+      ]
+    },
+
+    {
+      "deviceId": "tilt-01",
+      "deviceType": "tilt_platform",
+      "displayName": "罗盘台 · IMU 倾斜平台",
+      "file": "export/devices/tilt.glb",
+      "collection": "COL_Tilt",
+      "dataSource": {
+        "sensor": "MPU6050",
+        "node": "STM32F103 (I2C)",
+        "rateHz": 25,
+        "payload": { "q": "{w,x,y,z}", "roll": "deg", "pitch": "deg" },
+        "fusion": "Mahony / complementary on MCU",
+        "imuToScene": {
+          "mounting": "chip X -> platform front (three +X), chip Z -> up",
+          "vectorMap": { "x": "chip.x", "y": "chip.z", "z": "-chip.y" },
+          "quaternionMap": "q_three = (w, x, z, -y)",
+          "zeroCalibration": "display q0^-1 * q, q0 captured on demand",
+          "gimbalDecompose": "Euler order XZY: x -> ANIM_Tilt_GimbalOuter.rotation.x, z -> ANIM_Tilt_GimbalInner.rotation.z, y (yaw) ignored"
+        }
+      },
+      "metrics": [{ "key": "tiltDeg", "unit": "deg", "derived": "acos(dot(deckUp, worldUp))" }],
+      "nodes": {
+        "DEV_Tilt":               { "role": "root" },
+        "ANIM_Tilt_GimbalOuter":  { "drive": "rotationX", "limitDeg": [-30, 30], "pivot": "gimbal center, y 1.0" },
+        "ANIM_Tilt_GimbalInner":  { "drive": "rotationZ", "limitDeg": [-30, 30], "parent": "ANIM_Tilt_GimbalOuter" },
+        "ANIM_Tilt_Deck":         { "drive": "none", "parent": "ANIM_Tilt_GimbalInner", "note": "surface at local y 0.14" },
+        "ANIM_Tilt_Ball":         { "drive": "frontendPhysics", "parent": "ANIM_Tilt_Deck", "travelRadius": 1.07 },
+        "ANIM_Tilt_Bubble":       { "drive": "frontendOffset", "parent": "ANIM_Tilt_Deck", "travelRadius": 0.08 },
+        "FX_Tilt_Compass":        { "drive": "static", "note": "floor compass rose, N = three -Z" },
+        "FX_Tilt_Arc":            { "drive": "shader", "params": ["directionRad", "tiltDeg"], "note": "annulus r 2.0-2.25, UV.u = angle/2PI from three +X toward three -Z", "defaultVisible": false },
+        "FX_Tilt_PostStrips":     { "drive": "emissive", "note": "4 corner post LED strips" },
+        "LAMP_Tilt":              { "lampOf": "tilt-01" },
+        "HIT_Tilt":               { "role": "pick" },
+        "LBL_Tilt":               { "role": "label" },
+        "CAM_Tilt":               { "role": "bookmark" }
+      },
+      "stateRules": [
+        { "when": "tiltDeg >= 15", "lamp": "RED_BLINK", "fx": ["FX_Tilt_PostStrips:red", "FX_Tilt_Arc:red"], "recoverWhen": "tiltDeg <= 13", "debounceMs": 300 },
+        { "when": "tiltDeg >= 10", "lamp": "AMBER", "fx": ["FX_Tilt_PostStrips:amber", "FX_Tilt_Arc:amber"], "recoverWhen": "tiltDeg <= 8" },
+        { "when": "default", "lamp": "GREEN" }
+      ]
+    },
+
+    {
+      "deviceId": "agv-01",
+      "deviceType": "inspector",
+      "displayName": "巡检 AGV",
+      "file": "export/devices/agv.glb",
+      "collection": "COL_AGV",
+      "dataSource": { "source": "frontend (keyboard / patrolPath)", "rateHz": 60 },
+      "nodes": {
+        "DEV_AGV":          { "role": "root", "note": "moved on XZ plane by frontend; forward = local +Z; userData.patrolPath = flat [x,y,z,...]" },
+        "MNT_AGV_WheelL":   { "role": "mount" },
+        "MNT_AGV_WheelR":   { "role": "mount" },
+        "ANIM_AGV_WheelL":  { "drive": "spin", "axis": "y" },
+        "ANIM_AGV_WheelR":  { "drive": "spin", "axis": "y" },
+        "LAMP_AGV":         { "lampOf": "agv-01" },
+        "HIT_AGV":          { "role": "pick" },
+        "LBL_AGV":          { "role": "label" }
+      }
+    }
+  ],
+
+  "shared": {
+    "nodes": {
+      "STATIC_Plinth":       {},
+      "STATIC_Building":     {},
+      "STATIC_Mezzanine":    {},
+      "STATIC_ControlGlass": {},
+      "FX_Roof_Panels":      { "drive": "opacityByCameraAngle", "note": "sawtooth roof, north-facing glazing" },
+      "FX_Pipes_Flow":       { "drive": "uvScrollU", "note": "UV.u = meters along pipe" },
+      "SCR_Control_1":       {},
+      "SCR_Control_2":       {},
+      "SCR_Control_3":       {},
+      "CAM_Overview":        { "role": "bookmark", "default": true },
+      "CAM_FirstPerson":     { "role": "bookmark", "note": "on catwalk, eye height 1.65 m" }
+    },
+    "materials": {
+      "MAT_Graphite": "#1E2228",
+      "MAT_Concrete": "#8A8F94",
+      "MAT_SignalOrange": "#FF6A13",
+      "MAT_SafetyYellow": "#F2C200",
+      "MAT_Water": "#2EC4B6",
+      "MAT_Glass": "transmission, frontend may swap to cheap transparent",
+      "MAT_Lamp_<id>": "one per lamp, emissive driven",
+      "MAT_FX_*": "one per effect",
+      "MAT_Screen_<n>": "one per screen"
+    }
+  },
+
+  "offline": { "heartbeatTimeoutSec": 6, "lamp": "OFFLINE", "keepLastValue": true }
+}
