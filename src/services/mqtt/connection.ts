@@ -1,5 +1,6 @@
 import mqtt, { type MqttClient, type ISubscriptionGrant } from "mqtt";
 import { MQTT_CONFIG, MQTT_SUBSCRIPTIONS } from "./config";
+import { useConnectionStore } from "@/stores/connection";
 
 const { protocol, host, port, path, ...connectOptions } = MQTT_CONFIG;
 const BROKER_URL = `${protocol}://${host}:${port}${path}`;
@@ -8,7 +9,7 @@ const BROKER_URL = `${protocol}://${host}:${port}${path}`;
 let client: MqttClient | null = null;
 
 // 热更新替换本模块时，关掉旧模块里的连接，避免新旧两个连接同时在线。
-import.meta.hot?.dispose(() => client?.end(true));
+import.meta.hot?.dispose(() => disconnectMqtt());
 
 export function connectMqtt(): MqttClient {
   client ??= createClient();
@@ -16,8 +17,10 @@ export function connectMqtt(): MqttClient {
 }
 
 export function disconnectMqtt(): void {
-  client?.end();
+  if (!client) return;
+  client.end();
   client = null;
+  useConnectionStore().setStatus("disconnected");
 }
 
 export function getMqttClient(): MqttClient | null {
@@ -42,6 +45,7 @@ function createClient(): MqttClient {
     // clean: true 时 broker 不保留订阅，由 connect 回调每次重新订阅
     resubscribe: false,
   });
+  useConnectionStore().setStatus("connecting");
 
   mqttClient
     .on("connect", () => onConnect(mqttClient))
@@ -53,10 +57,11 @@ function createClient(): MqttClient {
 }
 
 // ---------- 连接事件 ----------
-// 后续在这里写入 stores/connection 的状态。
+// 状态流转：connecting → connected ⇄ reconnecting；disconnectMqtt() → disconnected
 
 function onConnect(mqttClient: MqttClient) {
   console.log("[MQTT] connected");
+  useConnectionStore().setStatus("connected");
   mqttClient.subscribe(MQTT_SUBSCRIPTIONS, { qos: 0 }, onSubscribed);
 }
 
@@ -64,12 +69,20 @@ function onReconnect() {
   console.log("[MQTT] reconnecting");
 }
 
+// 每次连接断开都会触发，包括重连失败。
+// 只有从 connected 掉线才切到 reconnecting；connecting / reconnecting 期间的失败保持原状态，
+// 主动断开已由 disconnectMqtt() 置为 disconnected，这里也不改。
 function onClose() {
-  console.log("[MQTT] disconnected");
+  console.log("[MQTT] closed");
+  const store = useConnectionStore();
+  if (store.status === "connected") {
+    store.setStatus("reconnecting");
+  }
 }
 
 function onError(err: Error) {
   console.error("[MQTT] error:", err);
+  useConnectionStore().setError(err.message);
 }
 
 // 成功和失败都会回调这里。broker 拒绝某个 topic 时 err 为空，只把该项 qos 标成 128。
