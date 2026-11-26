@@ -31,21 +31,27 @@ const TOPIC_PREFIX = "twin-plant-zfj";
 export const topicGwStatus = (gatewayId: string) =>
   `${TOPIC_PREFIX}/gw/${gatewayId}/status`;
 
-// 网关数据
+// 网关心跳
 export const topicGwData = (gatewayId: string) =>
-  `${TOPIC_PREFIX}/gw/${gatewayId}/data`;
+  `${TOPIC_PREFIX}/gw/${gatewayId}/heartbeat`;
+
+// 错误信息
+export const topicGwError = (gatewayId: string) =>
+  `${TOPIC_PREFIX}/gw/${gatewayId}/error`;
 
 // 设备数据
 export const topicDevData = (deviceId: string) =>
   `${TOPIC_PREFIX}/dev/${deviceId}/data`;
 
-// 设备控制请求
-export const topicDevCtrlReq = (deviceId: string) =>
-  `${TOPIC_PREFIX}/dev/${deviceId}/ctrl/req`;
+// 设备应答
+export const topicDevCtrlAck = (deviceId: string) =>
+  `${TOPIC_PREFIX}/dev/${deviceId}/ctrl/ack`;
 
 // 订阅合集
 export const MQTT_SUBSCRIPTIONS = [
   `${TOPIC_PREFIX}/gw/+/status`,
-  `${TOPIC_PREFIX}/gw/+/data`,
+  `${TOPIC_PREFIX}/gw/+/heartbeat`,
+  `${TOPIC_PREFIX}/gw/+/error`,
   `${TOPIC_PREFIX}/dev/+/data`,
+  `${TOPIC_PREFIX}/dev/+/ctrl/ack`,
 ];
