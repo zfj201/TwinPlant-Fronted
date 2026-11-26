@@ -24,7 +24,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import type { TableColumnsType } from 'ant-design-vue'
 
 const columns: TableColumnsType = [

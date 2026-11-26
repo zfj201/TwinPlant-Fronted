@@ -18,8 +18,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { routes } from '../../router'
 import { useConnectionStore, type ConnectionStatus } from '@/stores/connection'
 

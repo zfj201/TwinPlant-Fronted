@@ -21,8 +21,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-
 const keyword = ref('')
 const direction = ref<'all' | 'up' | 'down'>('all')
 const onlyError = ref(false)
