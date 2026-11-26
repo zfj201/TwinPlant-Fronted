@@ -32,7 +32,7 @@ export const topicGwStatus = (gatewayId: string) =>
   `${TOPIC_PREFIX}/gw/${gatewayId}/status`;
 
 // 网关心跳
-export const topicGwData = (gatewayId: string) =>
+export const topicGwHeartbeat = (gatewayId: string) =>
   `${TOPIC_PREFIX}/gw/${gatewayId}/heartbeat`;
 
 // 错误信息
@@ -43,15 +43,19 @@ export const topicGwError = (gatewayId: string) =>
 export const topicDevData = (deviceId: string) =>
   `${TOPIC_PREFIX}/dev/${deviceId}/data`;
 
+// 控制请求（下行）
+export const topicDevCtrlReq = (deviceId: string) =>
+  `${TOPIC_PREFIX}/dev/${deviceId}/ctrl/req`;
+
 // 设备应答
 export const topicDevCtrlAck = (deviceId: string) =>
   `${TOPIC_PREFIX}/dev/${deviceId}/ctrl/ack`;
 
 // 订阅合集
 export const MQTT_SUBSCRIPTIONS = [
-  `${TOPIC_PREFIX}/gw/+/status`,
-  `${TOPIC_PREFIX}/gw/+/heartbeat`,
-  `${TOPIC_PREFIX}/gw/+/error`,
-  `${TOPIC_PREFIX}/dev/+/data`,
-  `${TOPIC_PREFIX}/dev/+/ctrl/ack`,
+  topicGwStatus("+"),
+  topicGwHeartbeat("+"),
+  topicGwError("+"),
+  topicDevData("+"),
+  topicDevCtrlAck("+"),
 ];

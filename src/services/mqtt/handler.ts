@@ -1,5 +1,5 @@
 import { getMqttClient } from "./connection";
-import { topicGwStatus, topicGwData, topicDevData } from "./config";
+import { topicGwStatus, topicGwHeartbeat,topicGwError, topicDevData, topicDevCtrlAck, topicDevCtrlReq } from "./config";
 
 export function registerMqttHandlers() {
   const client = getMqttClient();
@@ -14,9 +14,15 @@ export function registerMqttHandlers() {
       switch (topic) {
         case topicGwStatus(message.gatewayId):
           break;
-        case topicGwData(message.gatewayId):
+        case topicGwHeartbeat(message.gatewayId):
+          break;
+        case topicGwError(message.gatewayId):
           break;
         case topicDevData(message.deviceId):
+          break;
+        case topicDevCtrlAck(message.deviceId):
+          break;
+        case topicDevCtrlReq(message.deviceId):
           break;
       }
     } catch (error) {
