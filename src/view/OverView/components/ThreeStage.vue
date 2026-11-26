@@ -14,8 +14,6 @@
 <script setup lang="ts">
 import { createTwinScene } from "@/three";
 import modelUrl from "@/assets/model/twinplant_factory.glb?url";
-import { onMounted, onUnmounted } from "vue";
-import { ref } from "vue";
 
 const el = ref<HTMLElement>();
 let handle: ReturnType<typeof createTwinScene> | null = null;

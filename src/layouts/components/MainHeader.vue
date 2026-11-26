@@ -9,16 +9,30 @@
       @click="onMenuClick"
     />
     <a-space class="status" :size="12" split>
-      <a-badge status="success" text="EMQX 已连接" />
-      <span>延迟 42 ms</span>
+      <a-tooltip :title="connection.lastError || undefined">
+        <a-badge :status="statusView.badge" :text="statusView.text" />
+      </a-tooltip>
+      <span>延迟 {{ connection.rttMs ?? '--' }} ms</span>
     </a-space>
   </header>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { routes } from '../../router'
+import { useConnectionStore, type ConnectionStatus } from '@/stores/connection'
+
+type BadgeStatus = 'success' | 'processing' | 'default' | 'error' | 'warning'
+
+const STATUS_VIEW: Record<ConnectionStatus, { badge: BadgeStatus; text: string }> = {
+  idle: { badge: 'default', text: 'EMQX 未连接' },
+  connecting: { badge: 'processing', text: 'EMQX 连接中' },
+  connected: { badge: 'success', text: 'EMQX 已连接' },
+  reconnecting: { badge: 'warning', text: 'EMQX 重连中' },
+  disconnected: { badge: 'error', text: 'EMQX 已断开' },
+}
+
+const connection = useConnectionStore()
+const statusView = computed(() => STATUS_VIEW[connection.status])
 
 const route = useRoute()
 const router = useRouter()
